@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
-pragma solidity ^0.8.0;
+import {Script} from "forge-std/Script.sol";
+import {Counter} from "../src/Counter.sol";
 
-import { Counter } from "../Counter.sol";
+contract DeployCounter is Script {
+    function setUp() public {}
 
-contract Deploy {
-    function deploy() public returns (address) {
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
         Counter counter = new Counter();
-        return address(counter);
+        vm.stopBroadcast();
     }
 }
