@@ -1,37 +1,57 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Counter} from "../src/Counter.sol";
 
 contract CounterTest is Test {
     Counter public counter;
+    address public user = address(0x123);
 
     function setUp() public {
         counter = new Counter();
-        // Our Counter contract initializes 'count' to 0 by default, so no need to set it explicitly
     }
 
-    function test_Increment() public {
+    function test_InitialCountIsZero() public view {
+        assertEq(counter.getCount(), 0);
+    }
+
+    function test_IncrementWorks() public {
         counter.increment();
-        assertEq(counter.count(), 1); // Access the 'count' state variable using the getter function
+        assertEq(counter.getCount(), 1);
     }
 
-    // We don't have a setNumber function in our Counter contract,
-    // so this test case would need to be removed or modified
-    // function testFuzz_SetNumber(uint256 x) public {
-    //     counter.setNumber(x);
-    //     assertEq(counter.number(), x);
-    // }
+    function test_IncrementMultipleTimes() public {
+        for (uint i = 0; i < 5; i++) {
+            counter.increment();
+        }
+        assertEq(counter.getCount(), 5);
+    }
 
-    function test_Decrement() public {
-        counter.increment(); // Increment once to have a value to decrement
+    function test_DecrementWorks() public {
+        counter.increment();
+        counter.increment();
         counter.decrement();
-        assertEq(counter.count(), 0);
+        assertEq(counter.getCount(), 1);
     }
 
-    function test_DecrementBelowZero() public {
-        counter.decrement(); // Try to decrement when count is 0
-        assertEq(counter.count(), 0); // Should remain 0 due to the check in the decrement function
+    function test_DecrementFailsAtZero() public {
+        vm.expectRevert("Counter: Cannot decrement below 0");
+        counter.decrement();
+    }
+
+    function test_OnlyOwnerCanReset() public {
+        counter.increment();
+        counter.reset();
+        assertEq(counter.getCount(), 0);
+        vm.prank(user);
+        vm.expectRevert("Counter: Only owner can call this");
+        counter.reset();
+    }
+
+    function test_EventEmission() public {
+        vm.expectEmit(true, false, false, true);
+        emit CountIncremented(1, address(this));
+        counter.increment();
     }
 }
